@@ -2,41 +2,45 @@ import 'package:flutter/material.dart';
 import 'cadastro_passo1.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key}); // Adicione esta linha!
+  const LoginScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  
+  // 1. Variável para controlar a visibilidade da senha
+  bool _passwordVisible = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 80),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Ícone de Escudo
+              // Ícone de Escudo (Azul Marinho)
               Icon(
                 Icons.verified_user_rounded,
                 size: 90,
-                color: Colors.blue[900],
+                color: const Color(0xFF001F3F), // Azul Marinho
               ),
-              SizedBox(height: 10),
-              // Nome do App: Primor
-              Text(
+              const SizedBox(height: 10),
+              
+              // Nome do App: Primor (Dourado)
+              const Text(
                 "PRIMOR",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 42,
-                  fontWeight: FontWeight.bold, // Montserrat Bold fica linda!
-                  color: const Color.fromARGB(255, 168, 142, 24),
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFA88E18), // Dourado Primor
                   letterSpacing: 1.2,
                 ),
               ),
@@ -48,15 +52,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[600],
-                  // Não precisa mais declarar a fontFamily, ela já é Montserrat!
                 ),
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
+
               // Campo E-mail
               TextFormField(
                 decoration: InputDecoration(
                   labelText: "E-mail",
-                  prefixIcon: Icon(Icons.email_outlined),
+                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF001F3F)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -65,13 +69,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? "Campo obrigatório"
                     : null,
               ),
-              SizedBox(height: 20),
-              // Campo Senha
+              const SizedBox(height: 20),
+
+              // Campo Senha com o "Olhinho"
               TextFormField(
-                obscureText: true,
+                obscureText: !_passwordVisible, // Inverte para esconder/mostrar
                 decoration: InputDecoration(
                   labelText: "Senha",
-                  prefixIcon: Icon(Icons.lock_outline),
+                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF001F3F)),
+                  // Botão do Olhinho
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: const Color(0xFF001F3F),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -80,12 +97,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? "Senha muito curta"
                     : null,
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
+
               // Botão Entrar
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  backgroundColor: Colors.blue[900],
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  backgroundColor: const Color(0xFF001F3F), // Azul Marinho
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -95,17 +113,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     print("Logando...");
                   }
                 },
-                child: Text("ENTRAR", style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  "ENTRAR", 
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                ),
               ),
+
               // Ir para Cadastro
               TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CadastroPasso1()),
+                    MaterialPageRoute(builder: (context) => const CadastroPasso1()),
                   );
                 },
-                child: Text("Quero me tornar um prestador Primor"),
+                child: const Text(
+                  "Quero me tornar um prestador Primor",
+                  style: TextStyle(color: Color(0xFFA88E18)), // Dourado
+                ),
               ),
             ],
           ),

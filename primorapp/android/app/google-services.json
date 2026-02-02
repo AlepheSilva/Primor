@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72695543122",
+    "project_id": "primor-d8087",
+    "storage_bucket": "primor-d8087.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72695543122:android:d27ec425eab75ad46cb68b",
+        "android_client_info": {
+          "package_name": "br.com.compromo.primorapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWa46GdUjQ_2WcyNJ0RoCCiKMvHRvKvfY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
