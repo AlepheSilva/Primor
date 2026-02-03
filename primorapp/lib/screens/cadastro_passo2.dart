@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // NOVO
+import 'package:firebase_auth/firebase_auth.dart'; // NOVO
 import 'cadastro_passo3.dart';
 
 class CadastroPasso2 extends StatefulWidget {
@@ -13,16 +15,49 @@ class _CadastroPasso2State extends State<CadastroPasso2> {
   final Color azulMarinho = const Color(0xFF001F3F);
   final Color douradoPrimor = const Color(0xFFA88E18);
 
+  bool _carregando = false; // NOVO: Feedback visual
+
   // Lista de especialidades selecionadas
   final List<String> _especialidadesSelecionadas = [];
 
-  // Mapa de Categorias e Serviços (Fácil de expandir no futuro!)
+  // Mapa de Categorias e Serviços
   final Map<String, List<String>> _categorias = {
     "Elétrica e Climatização": ["Eletricista", "Ar-condicionado", "Antenas/Interfones"],
     "Hidráulica e Gás": ["Encanador", "Desentupidor", "Aquecedores a Gás"],
     "Reformas e Acabamentos": ["Pintor", "Pedreiro", "Gesseiro", "Marceneiro"],
     "Serviços Gerais e Lar": ["Marido de Aluguel", "Montador de Móveis", "Jardineiro", "Limpeza"],
   };
+
+  // NOVO: Função para salvar as especialidades no Firestore
+  Future<void> _salvarEspecialidades() async {
+    setState(() => _carregando = true);
+    
+    try {
+      // Pega o ID do prestador logado
+      String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+      if (uid != null) {
+        // Salva/Atualiza no Firestore na coleção 'prestadores'
+        await FirebaseFirestore.instance.collection('prestadores').doc(uid).set({
+          'especialidades': _especialidadesSelecionadas,
+          'passoCadastro': 2,
+          'atualizadoEm': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)); // Merge para não apagar dados do Passo 1
+
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CadastroPasso3()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro ao salvar: $e"), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() => _carregando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +87,6 @@ class _CadastroPasso2State extends State<CadastroPasso2> {
                       style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 24),
 
-                  // Gerador Automático de Categorias e Chips
                   ..._categorias.entries.map((categoria) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,8 +99,8 @@ class _CadastroPasso2State extends State<CadastroPasso2> {
                           ),
                         ),
                         Wrap(
-                          spacing: 8.0, // Espaço horizontal entre chips
-                          runSpacing: 4.0, // Espaço vertical entre linhas de chips
+                          spacing: 8.0,
+                          runSpacing: 4.0,
                           children: categoria.value.map((servico) {
                             final bool selecionado = _especialidadesSelecionadas.contains(servico);
                             return FilterChip(
@@ -98,43 +132,39 @@ class _CadastroPasso2State extends State<CadastroPasso2> {
                         const SizedBox(height: 10),
                       ],
                     );
-                  },
-                )],
+                  }),
+                ],
               ),
             ),
           ),
 
           // Rodapé com o botão
-          // No final do build, dentro do Padding do botão:
-Padding(
-  padding: const EdgeInsets.all(24.0),
-  child: ElevatedButton(
-    style: ElevatedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      backgroundColor: azulMarinho,
-      minimumSize: const Size(double.infinity, 50),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ),
-    // O botão só habilita se houver especialidades selecionadas
-    onPressed: _especialidadesSelecionadas.isEmpty 
-      ? null 
-      : () {
-          // COMANDO DE NAVEGAÇÃO ADICIONADO AQUI:
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CadastroPasso3(),
-            ),
-          );
-        },
-    child: const Text(
-                "PRÓXIMO PASSO", 
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                backgroundColor: azulMarinho,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
+              onPressed: (_especialidadesSelecionadas.isEmpty || _carregando)
+                  ? null 
+                  : _salvarEspecialidades, // Chama a função do Firebase
+              child: _carregando 
+                ? const SizedBox(
+                    height: 20, 
+                    width: 20, 
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                  )
+                : const Text(
+                    "PRÓXIMO PASSO", 
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                  ),
             ),
           ),
         ],
       ),
-    ); // Aqui fecha o Scaffold
-  } // Aqui fecha o método build
-} // Aqui fecha a classe _CadastroPasso2State
+    );
+  }
+}

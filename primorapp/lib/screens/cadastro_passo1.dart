@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // NOVO: Importação do Firebase
 import 'cadastro_passo2.dart';
 
 class CadastroPasso1 extends StatefulWidget {
@@ -10,11 +11,55 @@ class CadastroPasso1 extends StatefulWidget {
 
 class _CadastroPasso1State extends State<CadastroPasso1> {
   final _formKey = GlobalKey<FormState>();
+  
+  // NOVO: Controladores agora ficam aqui dentro para melhor organização
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _cpfController = TextEditingController();
+  final TextEditingController _telefoneController = TextEditingController();
+
   bool _mostrarSenha = false;
+  bool _carregando = false; // NOVO: Para mostrar um feedback de carregamento
 
   // Cores da Identidade Primor
   final Color azulMarinho = const Color(0xFF001F3F);
   final Color douradoPrimor = const Color(0xFFA88E18);
+
+  // NOVO: Função que cria a conta no Firebase
+  Future<void> _proximoPasso() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _carregando = true);
+      
+      try {
+        // Criando o usuário no Firebase Auth
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _senhaController.text.trim(),
+        );
+
+        // Se deu certo, navegamos para o Passo 2
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CadastroPasso2()),
+        );
+      } on FirebaseAuthException catch (e) {
+        String mensagem = "Ocorreu um erro ao cadastrar.";
+        if (e.code == 'email-already-in-use') {
+          mensagem = "Este e-mail já está em uso.";
+        } else if (e.code == 'weak-password') {
+          mensagem = "A senha é muito fraca.";
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mensagem), backgroundColor: Colors.red),
+        );
+      } finally {
+        setState(() => _carregando = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +69,21 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
         title: const Text("Passo 1 de 3"),
         backgroundColor: azulMarinho,
         foregroundColor: Colors.white,
-        centerTitle: true, // Garante o título centralizado na AppBar
+        centerTitle: true,
         elevation: 0,
       ),
-      body: Center( // Centraliza o conteúdo verticalmente na tela
+      body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(30.0),
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // Centraliza os filhos na Column
-              crossAxisAlignment: CrossAxisAlignment.stretch, // Estica os campos horizontalmente
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   "Dados de Acesso",
-                  textAlign: TextAlign.center, // Centraliza o texto do título
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24, 
                     fontWeight: FontWeight.bold, 
@@ -47,43 +92,43 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
                 ),
                 const SizedBox(height: 30),
 
-                // 1. NOME COMPLETO
                 _buildField(
                   label: "Nome Completo", 
                   icon: Icons.person_outline,
+                  controller: _nomeController,
                   validator: (value) => (value == null || value.isEmpty) ? "Campo obrigatório" : null,
                 ),
                 const SizedBox(height: 15),
 
-                // 2. CPF
                 _buildField(
                   label: "CPF", 
                   icon: Icons.badge_outlined,
+                  controller: _cpfController,
                   keyboard: TextInputType.number,
                   validator: (value) => (value == null || value.length < 11) ? "CPF inválido" : null,
                 ),
                 const SizedBox(height: 15),
 
-                // 3. TELEFONE
                 _buildField(
                   label: "Telefone / WhatsApp", 
                   icon: Icons.phone_android_outlined,
+                  controller: _telefoneController,
                   keyboard: TextInputType.phone,
                   validator: (value) => (value == null || value.isEmpty) ? "Campo obrigatório" : null,
                 ),
                 const SizedBox(height: 15),
 
-                // 4. E-MAIL
                 _buildField(
                   label: "E-mail", 
                   icon: Icons.email_outlined,
+                  controller: _emailController,
                   keyboard: TextInputType.emailAddress,
                   validator: (value) => (value == null || !value.contains("@")) ? "E-mail inválido" : null,
                 ),
                 const SizedBox(height: 15),
 
-                // 5. SENHA
                 TextFormField(
+                  controller: _senhaController,
                   obscureText: !_mostrarSenha,
                   decoration: InputDecoration(
                     labelText: "Crie uma Senha",
@@ -101,7 +146,7 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
                 ),
                 const SizedBox(height: 40),
 
-                // BOTÃO PRÓXIMO
+                // BOTÃO PRÓXIMO COM FEEDBACK DE CARREGAMENTO
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 18),
@@ -111,18 +156,13 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CadastroPasso2()),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    "PRÓXIMO PASSO",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  onPressed: _carregando ? null : _proximoPasso,
+                  child: _carregando 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "PRÓXIMO PASSO",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                 ),
               ],
             ),
@@ -132,14 +172,16 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
     );
   }
 
-  // Função para criar os campos repetitivos de forma limpa
+  // Função atualizada para aceitar o controller
   Widget _buildField({
     required String label, 
     required IconData icon, 
+    required TextEditingController controller,
     TextInputType? keyboard,
     String? Function(String?)? validator
   }) {
     return TextFormField(
+      controller: controller,
       keyboardType: keyboard,
       decoration: InputDecoration(
         labelText: label,
