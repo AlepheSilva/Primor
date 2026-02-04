@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'primor-d8087.firebasestorage.app',
     measurementId: 'G-KJPEHR2DMC',
   );
+
 }
