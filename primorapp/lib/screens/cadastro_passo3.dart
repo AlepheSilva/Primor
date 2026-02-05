@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Certifique-se de ter rodado: flutter pub add image_picker
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart'; 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -16,17 +15,14 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
   final Color azulMarinho = const Color(0xFF001F3F);
   final Color douradoPrimor = const Color(0xFFA88E18);
 
-  // Arquivos REAIS agora
   File? fotoPerfil;
   File? documentoFrente;
   File? documentoVerso;
   bool _carregando = false;
 
-  // Função para capturar a imagem
   Future<void> _pegarImagem(String tipo) async {
     final ImagePicker picker = ImagePicker();
     
-    // Mostra opção de Câmera ou Galeria
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) => Column(
@@ -58,28 +54,24 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
     }
   }
 
-  // Função para subir as 3 fotos e finalizar
   Future<void> _finalizarCadastro() async {
     setState(() => _carregando = true);
     
     try {
       String uid = FirebaseAuth.instance.currentUser!.uid;
-      FirebaseStorage storage = FirebaseStorage.instance;
 
-      // 1. Upload das imagens (em paralelo para ser mais rápido)
-      List<String> urls = await Future.wait([
-        _uploadFile(storage, fotoPerfil!, '$uid/perfil.jpg'),
-        _uploadFile(storage, documentoFrente!, '$uid/documento_frente.jpg'),
-        _uploadFile(storage, documentoVerso!, '$uid/documento_verso.jpg'),
-      ]);
+      // SIMULAÇÃO DE UPLOAD (Aguardamos 2 segundos para dar realismo)
+      await Future.delayed(const Duration(seconds: 2));
 
-      // 2. Atualiza o Firestore
+      // ATUALIZAÇÃO DO FIRESTORE
+      // Definimos cadastroCompleto como TRUE para o AuthCheck liberar a Home
       await FirebaseFirestore.instance.collection('prestadores').doc(uid).update({
-        'urlFotoPerfil': urls[0],
-        'urlDocFrente': urls[1],
-        'urlDocVerso': urls[2],
-        'status': 'pendente', // Você verificará manualmente depois
-        'cadastroCompleto': true,
+        'urlFotoPerfil': 'simulada_pendente',
+        'urlDocFrente': 'simulada_pendente',
+        'urlDocVerso': 'simulada_pendente',
+        'status': 'verificacao_manual', 
+        'cadastroCompleto': true, // PONTO CHAVE: Agora o AuthCheck verá isso
+        'dataFinalizacao': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;
@@ -87,17 +79,33 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro ao enviar documentos: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("Erro ao salvar cadastro: $e"), backgroundColor: Colors.red),
       );
     } finally {
-      setState(() => _carregando = false);
+      if (mounted) setState(() => _carregando = false);
     }
   }
 
-  Future<String> _uploadFile(FirebaseStorage storage, File file, String path) async {
-    Reference ref = storage.ref().child('documentos_prestadores').child(path);
-    await ref.putFile(file);
-    return await ref.getDownloadURL();
+  void _showSucessoDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text("Sucesso!", style: TextStyle(color: azulMarinho, fontWeight: FontWeight.bold)),
+        content: const Text("Seu perfil foi enviado para análise! Agora você já pode acessar o painel do Primor."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Primeiro fechamos o Alerta
+              Navigator.of(context).pop();
+              // Depois limpamos a pilha de navegação para o AuthCheck assumir o controle
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: Text("ENTRAR NO APP", style: TextStyle(color: douradoPrimor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -108,7 +116,6 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
         title: const Text("Passo 3 de 3"),
         backgroundColor: azulMarinho,
         foregroundColor: Colors.white,
-        centerTitle: true,
       ),
       body: _carregando 
         ? Center(child: Column(
@@ -116,7 +123,7 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
             children: [
               CircularProgressIndicator(color: azulMarinho),
               const SizedBox(height: 20),
-              const Text("Enviando documentos..."),
+              const Text("Enviando para análise...", style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ))
         : SingleChildScrollView(
@@ -133,7 +140,7 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
 
                 _buildUploadCard(
                   titulo: "Sua Foto de Perfil",
-                  subtitulo: "Tire uma selfie nítida de frente",
+                  subtitulo: "Tire uma selfie nítida",
                   icone: Icons.face_retouching_natural,
                   concluido: fotoPerfil != null,
                   onTap: () => _pegarImagem('perfil'),
@@ -142,7 +149,7 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
 
                 _buildUploadCard(
                   titulo: "Documento (Frente)",
-                  subtitulo: "RG ou CNH aberta e legível",
+                  subtitulo: "RG ou CNH aberta",
                   icone: Icons.credit_card,
                   concluido: documentoFrente != null,
                   onTap: () => _pegarImagem('frente'),
@@ -151,7 +158,7 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
 
                 _buildUploadCard(
                   titulo: "Documento (Verso)",
-                  subtitulo: "Parte de trás do documento",
+                  subtitulo: "Parte de trás",
                   icone: Icons.style_outlined,
                   concluido: documentoVerso != null,
                   onTap: () => _pegarImagem('verso'),
@@ -163,7 +170,6 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     backgroundColor: azulMarinho,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   onPressed: (fotoPerfil != null && documentoFrente != null && documentoVerso != null)
                       ? _finalizarCadastro
@@ -211,26 +217,6 @@ class _CadastroPasso3State extends State<CadastroPasso3> {
             Icon(Icons.camera_alt_outlined, color: douradoPrimor),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showSucessoDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text("Sucesso!", style: TextStyle(color: azulMarinho)),
-        content: const Text("Seu perfil foi enviado! Você já pode acessar o painel enquanto analisamos seus dados."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Isso vai fazer o AuthCheck reavaliar o estado e mandar para a Home
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: Text("ENTRAR NO APP", style: TextStyle(color: douradoPrimor, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }

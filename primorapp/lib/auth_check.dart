@@ -12,6 +12,7 @@ class AuthCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Primeiro Stream: Ouve se o usuário está logado ou não
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -21,15 +22,18 @@ class AuthCheck extends StatelessWidget {
           );
         }
 
+        // 1. Se não houver usuário logado, vai para o Login
         if (!snapshot.hasData) {
           return const LoginScreen();
         }
 
-        return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance
+        // 2. Se estiver logado, usamos um segundo Stream para vigiar o documento no Firestore
+        // Isso garante que o app mude de tela SOZINHO assim que o Passo 3 terminar
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
               .collection('prestadores')
               .doc(snapshot.data!.uid)
-              .get(),
+              .snapshots(), // .snapshots() em vez de .get() para ser em tempo real
           builder: (context, docSnapshot) {
             if (docSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -37,11 +41,19 @@ class AuthCheck extends StatelessWidget {
               );
             }
 
+            // Lógica de Direcionamento
             if (docSnapshot.hasData && docSnapshot.data!.exists) {
-              return const HomePage();
-            } else {
-              return const CadastroPasso1();
+              final dados = docSnapshot.data!.data() as Map<String, dynamic>;
+              
+              // Se o cadastro estiver marcado como completo, libera a Home
+              if (dados['cadastroCompleto'] == true) {
+                return const HomePage();
+              }
             }
+
+            // Se o documento não existir ou o cadastro ainda estiver incompleto,
+            // mantém o usuário nas telas de cadastro
+            return const CadastroPasso1();
           },
         );
       },
