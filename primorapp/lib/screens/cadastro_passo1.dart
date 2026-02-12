@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; // NOVO: Para as máscaras
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:primorapp/screens/login_screen.dart'; 
 import 'cadastro_passo2.dart';
 
 class CadastroPasso1 extends StatefulWidget {
@@ -20,7 +21,6 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
   final TextEditingController _cpfController = TextEditingController();
   final TextEditingController _telefoneController = TextEditingController();
 
-  // DEFINIÇÃO DAS MÁSCARAS
   final maskCPF = MaskTextInputFormatter(
     mask: '###.###.###-##', 
     filter: {"#": RegExp(r'[0-9]')}
@@ -60,7 +60,7 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
         String uid = userCredential.user!.uid;
         await FirebaseFirestore.instance.collection('prestadores').doc(uid).set({
           'nome': _nomeController.text.trim(),
-          'cpf': _cpfController.text.trim(), // Salva formatado ou use maskCPF.getUnmaskedText() para apenas números
+          'cpf': _cpfController.text.trim(),
           'telefone': _telefoneController.text.trim(),
           'email': _emailController.text.trim(),
           'cadastroCompleto': false,
@@ -92,6 +92,7 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
         backgroundColor: azulMarinho,
         foregroundColor: Colors.white,
         centerTitle: true,
+        automaticallyImplyLeading: false, 
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -112,24 +113,22 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
                 ),
                 const SizedBox(height: 15),
 
-                // CAMPO CPF COM MÁSCARA
                 _buildField(
                   label: "CPF", 
                   icon: Icons.badge_outlined,
                   controller: _cpfController,
                   keyboard: TextInputType.number,
-                  inputFormatters: [maskCPF], // Aplica a máscara
+                  inputFormatters: [maskCPF],
                   validator: (value) => (value == null || value.length < 14) ? "CPF incompleto" : null,
                 ),
                 const SizedBox(height: 15),
 
-                // CAMPO TELEFONE COM MÁSCARA
                 _buildField(
                   label: "Telefone / WhatsApp", 
                   icon: Icons.phone_android_outlined,
                   controller: _telefoneController,
                   keyboard: TextInputType.phone,
-                  inputFormatters: [maskTelefone], // Aplica a máscara
+                  inputFormatters: [maskTelefone],
                   validator: (value) => (value == null || value.length < 13) ? "Telefone incompleto" : null,
                 ),
                 const SizedBox(height: 15),
@@ -157,14 +156,38 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
                   ),
                   validator: (value) => (value == null || value.length < 6) ? "Mínimo 6 caracteres" : null,
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
 
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18), backgroundColor: azulMarinho),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18), 
+                    backgroundColor: azulMarinho,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                   onPressed: _carregando ? null : _proximoPasso,
                   child: _carregando 
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Text("PRÓXIMO PASSO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                ),
+
+                const SizedBox(height: 15),
+
+                // BOTÃO DE VOLTAR REFORMULADO PARA EVITAR TELA PRETA
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context, 
+                      MaterialPageRoute(builder: (context) => const LoginScreen()), // Redireciona para o Login no main.dart
+                      (route) => false, // Remove todas as outras telas da memória
+                    );
+                  },
+                  child: Text(
+                    "Já tem uma conta? Voltar para o Login",
+                    style: TextStyle(
+                      color: azulMarinho.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -179,13 +202,13 @@ class _CadastroPasso1State extends State<CadastroPasso1> {
     required IconData icon, 
     required TextEditingController controller,
     TextInputType? keyboard,
-    List<MaskTextInputFormatter>? inputFormatters, // Novo parâmetro
+    List<MaskTextInputFormatter>? inputFormatters,
     String? Function(String?)? validator
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboard,
-      inputFormatters: inputFormatters, // Adicionado aqui
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: azulMarinho),

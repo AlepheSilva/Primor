@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'cadastro_passo1.dart';
+import 'cadastro_passo1.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,26 +34,32 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordController.text.trim(),
         );
 
-        // AQUI ESTÁ A MUDANÇA: Não precisamos de Navigator.
-        // O AuthCheck no main.dart já está ouvindo o login e vai mudar a tela!
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Bem-vindo de volta!"),
+              content: Text("Bem-vindo ao Primor!"),
               backgroundColor: Colors.green,
             ),
           );
+
+          // REDIRECIONAMENTO MANUAL
+          // Como você disse que ele não estava mudando de tela, 
+          // vamos forçar a navegação para a sua Home/Dashboard aqui.
+          // Se sua tela inicial se chamar HomePage, use o código abaixo:
+          /*
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+          */
         }
       } on FirebaseAuthException catch (e) {
         String mensagem = "Erro ao entrar";
         
-        // Tratamento de erros atualizado
         if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
           mensagem = "E-mail ou senha incorretos.";
         } else if (e.code == 'invalid-email') {
           mensagem = "O formato do e-mail é inválido.";
-        } else if (e.code == 'user-disabled') {
-          mensagem = "Este usuário foi desativado.";
         }
 
         if (mounted) {
@@ -69,13 +75,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Puxando as cores do tema que definimos no main.dart
     final primaryColor = Theme.of(context).colorScheme.primary;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center( // Centraliza o conteúdo se a tela for grande
+      body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 50),
           child: Form(
@@ -108,11 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: "E-mail",
                     prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  validator: (value) => (value == null || !value.contains('@'))
-                      ? "Insira um e-mail válido"
-                      : null,
+                  validator: (value) => (value == null || !value.contains('@')) ? "E-mail inválido" : null,
                 ),
                 const SizedBox(height: 20),
 
@@ -123,33 +125,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: "Senha",
                     prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _passwordVisible ? Icons.visibility : Icons.visibility_off,
-                        color: primaryColor,
-                      ),
+                      icon: Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off, color: primaryColor),
                       onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  validator: (value) => (value == null || value.length < 6)
-                      ? "Senha deve ter no mínimo 6 caracteres"
-                      : null,
+                  validator: (value) => (value == null || value.length < 6) ? "Mínimo 6 caracteres" : null,
                 ),
                 const SizedBox(height: 30),
 
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    // O style já pega o azul marinho do main.dart automaticamente
-                  ),
                   onPressed: _isLoading ? null : _fazerLogin,
                   child: _isLoading 
-                    ? const SizedBox(
-                        height: 20, 
-                        width: 20, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                      )
-                    : const Text("ENTRAR", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("ENTRAR"),
                 ),
 
                 const SizedBox(height: 10),
